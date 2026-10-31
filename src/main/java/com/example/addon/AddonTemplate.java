@@ -1,49 +1,69 @@
-package com.example.addon;
+=package com.example.addon.modules;
 
-import com.example.addon.commands.CommandExample;
-import com.example.addon.hud.HudExample;
-import com.example.addon.modules.ModuleExample;
-import com.mojang.logging.LogUtils;
-import meteordevelopment.meteorclient.addons.GithubRepo;
-import meteordevelopment.meteorclient.addons.MeteorAddon;
-import meteordevelopment.meteorclient.commands.Commands;
-import meteordevelopment.meteorclient.systems.hud.Hud;
-import meteordevelopment.meteorclient.systems.hud.HudGroup;
-import meteordevelopment.meteorclient.systems.modules.Category;
-import meteordevelopment.meteorclient.systems.modules.Modules;
-import org.slf4j.Logger;
+import meteordevelopment.meteorclient.systems.modules.Module;
+import meteordevelopment.meteorclient.systems.modules.Categories;
+import meteordevelopment.meteorclient.utils.player.ChatUtils;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.entity.ChestBlockEntity;
+import net.minecraft.util.math.BlockPos;
 
-public class AddonTemplate extends MeteorAddon {
-    public static final Logger LOG = LogUtils.getLogger();
-    public static final Category CATEGORY = new Category("Example");
-    public static final HudGroup HUD_GROUP = new HudGroup("Example");
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
-    @Override
-    public void onInitialize() {
-        LOG.info("Initializing Meteor Addon Template");
+public class ChestClusterFinder extends Module {
+    private final int CLUSTER_THRESHOLD = 5; 
+    private final int RADIUS = 5;            
+    private final Set<BlockPos> reportedClusters = new HashSet<>();
 
-        // Modules
-        Modules.get().add(new ModuleExample());
-
-        // Commands
-        Commands.add(new CommandExample());
-
-        // HUD
-        Hud.get().register(HudExample.INFO);
+    public ChestClusterFinder() {
+        super(Categories.Render, "chest-cluster-finder", "Ищет большие скопления сундуков.");
     }
 
     @Override
-    public void onRegisterCategories() {
-        Modules.registerCategory(CATEGORY);
+    public void onActivate() {
+        reportedClusters.clear();
     }
 
     @Override
-    public String getPackage() {
-        return "com.example.addon";
+    public void onTick() {
+        if (mc.world == null || mc.player == null) return;
+
+        List<BlockPos> chests = new ArrayList<>();
+
+        for (BlockEntity blockEntity : mc.world.blockEntities) {
+            if (blockEntity instanceof ChestBlockEntity) {
+                chests.add(blockEntity.getPos());
+            }
+        }
+
+        for (BlockPos chest : chests) {
+            if (isAlreadyReported(chest)) continue;
+
+            int count = 0;
+            for (BlockPos otherChest : chests) {
+                if (chest.isWithinDistance(otherChest, RADIUS)) {
+                    count++;
+                }
+            }
+
+            if (count >= CLUSTER_THRESHOLD) {
+                ChatUtils.info(" Найдено скопление сундуков (" + count + " шт.) в координатах: X: " 
+                        + chest.getX() + " Y: " + chest.getY() + " Z: " + chest.getZ());
+                markClusterAsReported(chest);
+            }
+        }
     }
 
-    @Override
-    public GithubRepo getRepo() {
-        return new GithubRepo("MeteorDevelopment", "meteor-addon-template");
+    private boolean isAlreadyReported(BlockPos pos) {
+        for (BlockPos reported : reportedClusters) {
+            if (pos.isWithinDistance(reported, RADIUS * 2)) return true;
+        }
+        return false;
+    }
+
+    private void markClusterAsReported(BlockPos pos) {
+        reportedClusters.add(pos);
     }
 }
