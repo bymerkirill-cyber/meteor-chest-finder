@@ -1,15 +1,15 @@
 [versions]
 mod-version = "0.1.0"
 
-# Fabric (https://fabricmc.net/develop)
+# Fabric (https://fabricmc.net)
 jdk = "21"
 minecraft = "1.21.1"
 fabric-loader = "0.16.9"
 
-# Loom (https://github.com/FabricMC/fabric-loom)
-loom = "1.8-SNAPSHOT"
+# Используем стабильную стабильную версию Loom для Gradle 8+
+loom = "1.9-SNAPSHOT"
 
-# Meteor (https://github.com/MeteorDevelopment/meteor-client/)
+# Meteor (https://github.com)
 meteor = "0.5.9"
 
 [libraries]
